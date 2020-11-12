@@ -1,0 +1,16 @@
+{
+  "required_api_version": "^2.0.0",
+  "name": "Timezones",
+  "description": "Convert time from any timezones",
+  "developer_name": "Epholys",
+  "icon": "images/icon.png",
+  "preferences": [
+    {
+      "id": "tzkw",
+      "type": "keyword",
+      "name": "Timezone",
+      "description": "Keyword to launch the extension",
+      "default_value": "tz"
+    }
+  ]
+}
