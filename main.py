@@ -39,25 +39,34 @@ def parse_date(strdate):
 class ExprCode(Enum):
     ERR = -1
     TZ_ONLY = 0
-    TZ_DATE = 1
+    TZ_DATEIN = 1
+    TZ_DATEAT = 2
+
     
 # Of course, formal grammar is ridiculous invention which only goal is
 # to avoid the creation of such beautifully clean code like the one below
 # I expertedly crafted.
 def parse_expression(expr):
-    split = expr.split(' in ')
-    length = len(split)
+    splitin = expr.split(' in ')
+    lenin = len(splitin)
 
-    timezone = split[-1].strip()
-    if length == 1:
-        return ExprCode.TZ_ONLY, timezone, None
+    splitat = expr.split(' at ')
+    lenat = len(splitat)
 
-    date = parse_date(split[-2].strip())
-    if length == 2:
-        return ExprCode.TZ_DATE, timezone, date
+    if lenin == 1 and lenat == 1:
+        # [location]
+        return ExprCode.TZ_ONLY, splitin[0].strip(), None
+
+    if lenin == 2 and lenat == 1:
+        # [time] in [location]
+        return ExprCode.TZ_DATEIN, splitin[1].strip(), parse_date(splitin[0].strip())
+
+    if lenin == 1 and lenat == 2:
+        # [location] a [time]
+        return ExprCode.TZ_DATEAT, splitat[0].strip(), parse_date(splitat[1].strip())
 
     return ExprCode.ERR, None, None
-
+    
     
 class KeywordQueryEventListener(EventListener):
 
@@ -74,23 +83,28 @@ class KeywordQueryEventListener(EventListener):
             return RenderResultListAction([item])
 
         date = datetime.now()        
-        if code == ExprCode.TZ_DATE:
+        if code == ExprCode.TZ_DATEIN or code == ExprCode.TZ_DATEAT:
             if when[1] == err:
                 item = ExtensionResultItem(name='Incorrect date')
                 return RenderResultListAction([item])                        
             date, _ = when
-                
 
-        if where in all_timezones:
-            time_there = date.astimezone(timezone(where)).strftime("%Y-%m-%d %H:%M")
-            item = ExtensionResultItem(icon='images/icon.png',
-                                       name=time_there,
-                                       description='Time in {0}'.format(where))
-        else:
-            item = ExtensionResultItem(name='Incorrect timezone')
 
+        if where not in all_timezones:
+            item = ExtensionResultItem(name='Incorrect timezone')            
+            return RenderResultListAction([item])
+
+        tz = timezone(where)
+        if code == ExprCode.TZ_DATEAT:
+            # Reverse everything            
+            date = datetime.combine(date.date(), date.time(), tz)
+            tz=None # = here
+        
+        result = date.astimezone(tz).strftime("%Y-%m-%d %H:%M")
+        item = ExtensionResultItem(icon='images/icon.png',
+                                   name=result,
+                                   description='Time in {0}'.format(where))
         return RenderResultListAction([item])
-
 
 
 class TzExtension(Extension):
