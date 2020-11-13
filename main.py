@@ -9,7 +9,7 @@ from ulauncher.api.shared.action.RenderResultListAction import RenderResultListA
 from ulauncher.api.shared.event import KeywordQueryEvent
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 
-from pytz_wrapper import timezone, all_timezones
+from pytz_wrapper import timezone, UnknownTimeZoneError
 
 logger = logging.getLogger(__name__)
 
@@ -94,11 +94,14 @@ class KeywordQueryEventListener(EventListener):
                 return RenderResultListAction([item])
             date, _ = when
 
-        if where not in all_timezones:
+        tz = None
+        try:
+            logger.debug("Trying tz")
+            tz = timezone(where)
+        except UnknownTimeZoneError:
             item = ExtensionResultItem(name="Incorrect timezone")
             return RenderResultListAction([item])
 
-        tz = timezone(where)
         if code == ExprCode.TZ_DATEAT:
             # Reverse everything
             date = dtdatetime.combine(date.date(), date.time(), tz)
