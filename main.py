@@ -9,8 +9,7 @@ from ulauncher.api.shared.action.RenderResultListAction import RenderResultListA
 from ulauncher.api.shared.event import KeywordQueryEvent
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 
-from pytz import timezone, all_timezones
-
+from pytz_wrapper import timezone, all_timezones
 
 logger = logging.getLogger(__name__)
 
