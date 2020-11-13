@@ -1,119 +1,122 @@
-from ulauncher.api.client.Extension import Extension
-from ulauncher.api.client.EventListener import EventListener
-from ulauncher.api.shared.event import KeywordQueryEvent, ItemEnterEvent
-from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
-from ulauncher.api.shared.action.RenderResultListAction import RenderResultListAction
-from ulauncher.api.shared.action.DoNothingAction import DoNothingAction
-
+import logging
+from datetime import datetime as dtdatetime, date as dtdate, time as dttime
 from enum import Enum
-from datetime import datetime, date, time
+
+from ulauncher.api.client.EventListener import EventListener
+from ulauncher.api.client.Extension import Extension
+from ulauncher.api.shared.action.DoNothingAction import DoNothingAction
+from ulauncher.api.shared.action.RenderResultListAction import RenderResultListAction
+from ulauncher.api.shared.event import KeywordQueryEvent
+from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
+
 from pytz import timezone, all_timezones
 
-import logging
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 ok = True
 err = False
 
-def parse_date(strdate):    
-    if strdate == 'now':
-        return (datetime.now(), ok)
 
-    # First try a simple time:
+def parse_date(string):
+    if string == "now":
+        return (dtdatetime.now(), ok)
+
+    # First try a simple time in HH:MM:SS format:
     try:
-        HHMM = time.fromisoformat(strdate)
-        mmdd = datetime.combine(date.today(), HHMM)
-        return (mmdd, ok)
+        time = dttime.fromisoformat(string)
+        date = dtdatetime.combine(dtdate.today(), time)
+        return (date, ok)
     except ValueError:
         pass
 
-    # Okay, then a date:
+    # Okay, then complete date
     try:
-        mmdd = datetime.fromisoformat(strdate)
-        return (mmdd, ok)
+        date = dtdatetime.fromisoformat(string)
+        return (date, ok)
     except ValueError:
         return (None, err)
 
-    
+
 class ExprCode(Enum):
     ERR = -1
     TZ_ONLY = 0
     TZ_DATEIN = 1
     TZ_DATEAT = 2
 
-    
-# Of course, formal grammar is ridiculous invention which only goal is
-# to avoid the creation of such beautifully clean code like the one below
-# I expertedly crafted.
+
 def parse_expression(expr):
-    splitin = expr.split(' in ')
-    lenin = len(splitin)
+    # Split & Strip
+    split_in = list(map(str.strip, expr.split(" in ")))
+    len_in = len(split_in)
 
-    splitat = expr.split(' at ')
-    lenat = len(splitat)
+    split_at = list(map(str.strip, expr.split(" at ")))
+    len_at = len(split_at)
 
-    if lenin == 1 and lenat == 1:
+    if len_in == 1 and len_at == 1:
         # [location]
-        return ExprCode.TZ_ONLY, splitin[0].strip(), None
+        location = split_in[0]
+        return ExprCode.TZ_ONLY, location, None
 
-    if lenin == 2 and lenat == 1:
+    if len_in == 2 and len_at == 1:
         # [time] in [location]
-        return ExprCode.TZ_DATEIN, splitin[1].strip(), parse_date(splitin[0].strip())
+        location = split_in[1]
+        date = parse_date(split_in[0])
+        return ExprCode.TZ_DATEIN, location, date
 
-    if lenin == 1 and lenat == 2:
-        # [location] a [time]
-        return ExprCode.TZ_DATEAT, splitat[0].strip(), parse_date(splitat[1].strip())
+    if len_in == 1 and len_at == 2:
+        # [location] at [time]
+        location = split_at[0]
+        date = parse_date(split_at[1])
+        return ExprCode.TZ_DATEAT, location, date
 
     return ExprCode.ERR, None, None
-    
-    
-class KeywordQueryEventListener(EventListener):
 
+
+class KeywordQueryEventListener(EventListener):
     def on_event(self, event, extension):
-        expr = event.get_argument()               
+        expr = event.get_argument()
         if not expr:
             return DoNothingAction()
-        
+
         code, where, when = parse_expression(expr)
-        logger.debug("parse returned: where={}, when={}, code={}".format(where, when, code))        
-        
+        logger.debug(
+            "parse returned: where={}, when={}, code={}".format(where, when, code)
+        )
+
         if code == ExprCode.ERR:
-            item = ExtensionResultItem(name='Incorrect expression')
+            item = ExtensionResultItem(name="Incorrect expression")
             return RenderResultListAction([item])
 
-        date = datetime.now()        
+        date = dtdatetime.now()
         if code == ExprCode.TZ_DATEIN or code == ExprCode.TZ_DATEAT:
             if when[1] == err:
-                item = ExtensionResultItem(name='Incorrect date')
-                return RenderResultListAction([item])                        
+                item = ExtensionResultItem(name="Incorrect date")
+                return RenderResultListAction([item])
             date, _ = when
 
-
         if where not in all_timezones:
-            item = ExtensionResultItem(name='Incorrect timezone')            
+            item = ExtensionResultItem(name="Incorrect timezone")
             return RenderResultListAction([item])
 
         tz = timezone(where)
         if code == ExprCode.TZ_DATEAT:
-            # Reverse everything            
-            date = datetime.combine(date.date(), date.time(), tz)
-            tz=None # = here
-        
+            # Reverse everything
+            date = dtdatetime.combine(date.date(), date.time(), tz)
+            tz = None  # = here
+
         result = date.astimezone(tz).strftime("%Y-%m-%d %H:%M")
-        item = ExtensionResultItem(icon='images/icon.png',
-                                   name=result,
-                                   description='Time in {0}'.format(where))
+        item = ExtensionResultItem(
+            icon="images/icon.png", name=result, description="Time in {0}".format(where)
+        )
         return RenderResultListAction([item])
 
 
 class TzExtension(Extension):
-
     def __init__(self):
         super(TzExtension, self).__init__()
         self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
 
 
-    
-if __name__ == '__main__':
+if __name__ == "__main__":
     TzExtension().run()
