@@ -107,10 +107,25 @@ class KeywordQueryEventListener(EventListener):
             date = dtdatetime.combine(date.date(), date.time(), tz)
             tz = None  # = here
 
-        result = date.astimezone(tz).strftime("%Y-%m-%d %H:%M")
+        raw_result = date.astimezone(tz)
+        result = raw_result.strftime("%Y-%m-%d %H:%M")
+
+        description = ""
+        if code == ExprCode.TZ_ONLY:
+            description = "Time in {} now".format(where)
+        elif code == ExprCode.TZ_DATEIN:
+            description = "Time in {1}, at {0} here".format(
+                date.strftime("%H:%M"), where
+            )
+        else:  # code == ExprCode.TZ_DATEAT:
+            description = "Time here, in {1} at {0}".format(
+                date.strftime("%H:%M"), where
+            )
+
         item = ExtensionResultItem(
-            icon="images/icon.png", name=result, description="Time in {0}".format(where)
+            icon="images/icon.png", name=result, description=description
         )
+
         return RenderResultListAction([item])
 
 
