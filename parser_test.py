@@ -5,13 +5,14 @@ import main
 
 
 class TestParseDate(unittest.TestCase):
-    def assert_almost_eq(self, actual, expected):
-        self.assertAlmostEqual(actual, expected, delta=dt.timedelta(microseconds=100))
+    def assert_almost_eq(self, actual, expected, message=""):
+        self.assertAlmostEqual(
+            actual, expected, delta=dt.timedelta(microseconds=100), msg=message
+        )
 
     def test_now(self):
         now = dt.datetime.now()
-        parsed, code = main.parse_date("now")
-        self.assertTrue(code)
+        parsed = main.parse_datetime("now")
         self.assert_almost_eq(parsed, now)
 
     def test_HH(self):
@@ -19,8 +20,7 @@ class TestParseDate(unittest.TestCase):
         today = dt.date.today()
         time = dt.time(HH)
         expected = dt.datetime.combine(today, time)
-        parsed, code = main.parse_date(str(HH))
-        self.assertTrue(code)
+        parsed = main.parse_datetime(str(HH))
         self.assert_almost_eq(parsed, expected)
 
     def test_HHMM(self):
@@ -30,35 +30,31 @@ class TestParseDate(unittest.TestCase):
         today = dt.date.today()
         time = dt.time(HH, MM)
         expected = dt.datetime.combine(today, time)
-        parsed, code = main.parse_date(time_input)
-        self.assertTrue(code)
+        parsed = main.parse_datetime(time_input)
         self.assert_almost_eq(parsed, expected)
 
-    def test_YYmmdd(self):
-        YY = 2020
-        mm = 2
-        dd = 13
-        time_input = f"{YY}-0{mm}-{dd}"
-        expected = dt.datetime(YY, mm, dd)
-        parsed, code = main.parse_date(time_input)
-        self.assertTrue(code)
+    def test_mmdd(self):
+        mm = 12
+        dd = 31
+        time_input = f"{mm}-{dd}"
+        expected_time = dt.datetime.now().time()
+        expected_date = dt.date(dt.date.today().year, mm, dd)
+        expected = dt.datetime.combine(expected_date, expected_time)
+        parsed = main.parse_datetime(time_input)
         self.assert_almost_eq(parsed, expected)
 
-    def test_YYmmddHHmm(self):
-        YY = 2020
+    def test_mmddHHmm(self):
         mm = 2
-        dd = 13
+        dd = 28
         HH = 4
         MM = 6
-        time_input = f"{YY}-0{mm}-{dd} 0{HH}:0{MM}"
-        expected = dt.datetime(YY, mm, dd, HH, MM)
-        parsed, code = main.parse_date(time_input)
-        self.assertTrue(code)
+        time_input = f"0{mm}-{dd} 0{HH}:0{MM}"
+        expected = dt.datetime(dt.date.today().year, mm, dd, HH, MM)
+        parsed = main.parse_datetime(time_input)
         self.assert_almost_eq(parsed, expected)
 
     def test_incorrect(self):
-        parsed, code = main.parse_date("IO:54_ZD-LK")
-        self.assertFalse(code)
+        parsed = main.parse_datetime("IO:54 ZD-LK")
         self.assertIsNone(parsed)
 
 

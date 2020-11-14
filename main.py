@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime as dtdatetime, date as dtdate, time as dttime
+import datetime as dt
 from enum import Enum
 
 from ulauncher.api.client.EventListener import EventListener
@@ -11,30 +11,76 @@ from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 
 from pytz_wrapper import timezone, UnknownTimeZoneError
 
-logger = logging.getLogger(__name__)
-
-ok = True
-err = False
+_logger = logging.getLogger(__name__)
 
 
-def parse_date(string):
-    if string == "now":
-        return (dtdatetime.now(), ok)
+def parse_date(date_str):
+    # Try to find a date in "mm-dd" format first
+    # (This is not supported by datetime, as it wants "yyyy-" first)
+    month_day = date_str.split("-")
+    if len(month_day) == 2:
+        try:
+            year = dt.date.today().year
+            month = (int)(month_day[0])
+            day = (int)(month_day[1])
+            date = dt.date(year, month, day)
+            return date
+        except ValueError:
+            pass
 
-    # First try a simple time in HH:MM:SS format:
+    # Okay, then try the complete date
     try:
-        time = dttime.fromisoformat(string)
-        date = dtdatetime.combine(dtdate.today(), time)
-        return (date, ok)
+        date = dt.date.fromisoformat(date_str)
+        return date
     except ValueError:
         pass
 
-    # Okay, then complete date
+    return None
+
+
+def parse_time(time_str):
+    # Try to parse a simple time in HH:MM:SS format:
+    # (HH alone, and HH:MM alone are also supported)
     try:
-        date = dtdatetime.fromisoformat(string)
-        return (date, ok)
+        time = dt.time.fromisoformat(time_str)
+        return time
     except ValueError:
-        return (None, err)
+        pass
+
+    return None
+
+
+def parse_datetime(datetime_str):
+    # Note: suppose the day, month, or year will not change the next second
+
+    # Basic "now" datetime
+    if datetime_str == "now":
+        return dt.datetime.now()
+
+    datetime_split = list(map(str.strip, datetime_str.split(" ")))
+    n = len(datetime_split)
+    if n > 2:
+        return None
+
+    if n == 2:
+        date_str, time_str = datetime_split[:2]
+    else:
+        date_str = time_str = datetime_split[0]
+
+    date = parse_date(date_str)
+    time = parse_time(time_str)
+
+    if not (date or time):
+        return None
+
+    if not date:
+        date = dt.date.today()
+
+    if not time:
+        time = dt.datetime.now().time()
+
+    datetime = dt.datetime.combine(date, time)
+    return datetime
 
 
 class ExprCode(Enum):
@@ -60,13 +106,13 @@ def parse_expression(expr):
     if len_in == 2 and len_at == 1:
         # [time] in [location]
         location = split_in[1]
-        date = parse_date(split_in[0])
+        date = parse_datetime(split_in[0])
         return ExprCode.TZ_DATEIN, location, date
 
     if len_in == 1 and len_at == 2:
         # [location] at [time]
         location = split_at[0]
-        date = parse_date(split_at[1])
+        date = parse_datetime(split_at[1])
         return ExprCode.TZ_DATEAT, location, date
 
     return ExprCode.ERR, None, None
@@ -79,7 +125,7 @@ class KeywordQueryEventListener(EventListener):
             return DoNothingAction()
 
         code, where, when = parse_expression(expr)
-        logger.debug(
+        _logger.debug(
             "parse returned: where={}, when={}, code={}".format(where, when, code)
         )
 
@@ -87,16 +133,16 @@ class KeywordQueryEventListener(EventListener):
             item = ExtensionResultItem(name="Incorrect expression")
             return RenderResultListAction([item])
 
-        date = dtdatetime.now()
+        date = dt.datetime.now()
         if code == ExprCode.TZ_DATEIN or code == ExprCode.TZ_DATEAT:
-            if when[1] == err:
+            if not when:
                 item = ExtensionResultItem(name="Incorrect date")
                 return RenderResultListAction([item])
-            date, _ = when
+            date = when
 
         tz = None
         try:
-            logger.debug("Trying tz")
+            _logger.debug("Trying tz")
             tz = timezone(where)
         except UnknownTimeZoneError:
             item = ExtensionResultItem(name="Incorrect timezone")
@@ -104,7 +150,7 @@ class KeywordQueryEventListener(EventListener):
 
         if code == ExprCode.TZ_DATEAT:
             # Reverse everything
-            date = dtdatetime.combine(date.date(), date.time(), tz)
+            date = dt.datetime.combine(date.date(), date.time(), tz)
             tz = None  # = here
 
         raw_result = date.astimezone(tz)
