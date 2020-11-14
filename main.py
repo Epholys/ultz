@@ -125,9 +125,7 @@ class KeywordQueryEventListener(EventListener):
             return DoNothingAction()
 
         code, where, when = parse_expression(expr)
-        _logger.debug(
-            "parse returned: where={}, when={}, code={}".format(where, when, code)
-        )
+        _logger.debug(f"parse returned: where={where}, when=${when}, code=${code}")
 
         if code == ExprCode.ERR:
             item = ExtensionResultItem(name="Incorrect expression")
@@ -158,15 +156,11 @@ class KeywordQueryEventListener(EventListener):
 
         description = ""
         if code == ExprCode.TZ_ONLY:
-            description = "Time in {} now".format(where)
+            description = f"Time in {where} now"
         elif code == ExprCode.TZ_DATEIN:
-            description = "Time in {1}, at {0} here".format(
-                date.strftime("%H:%M"), where
-            )
+            description = f'Time in {where}, at {date.strftime("%H:%M")} here'
         else:  # code == ExprCode.TZ_DATEAT:
-            description = "Time here, in {1} at {0}".format(
-                date.strftime("%H:%M"), where
-            )
+            description = f'Time here, in {date.strftime("%H:%M")} at {where}'
 
         item = ExtensionResultItem(
             icon="images/icon.png", name=result, description=description
