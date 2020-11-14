@@ -10,11 +10,6 @@ class TestParseDate(unittest.TestCase):
             actual, expected, delta=dt.timedelta(microseconds=100), msg=message
         )
 
-    def test_now(self):
-        now = dt.datetime.now()
-        parsed = main.parse_datetime("now")
-        self.assert_almost_eq(parsed, now)
-
     def test_HH(self):
         HH = 19
         today = dt.date.today()

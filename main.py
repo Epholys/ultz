@@ -52,11 +52,6 @@ def parse_time(time_str):
 
 def parse_datetime(datetime_str):
     # Note: suppose the day, month, or year will not change the next second
-
-    # Basic "now" datetime
-    if datetime_str == "now":
-        return dt.datetime.now()
-
     datetime_split = list(map(str.strip, datetime_str.split(" ")))
     n = len(datetime_split)
     if n > 2:
