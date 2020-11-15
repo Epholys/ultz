@@ -3,17 +3,16 @@ import csv
 import logging
 
 from pytz import timezone as tz
-from collections.abc import Mapping
 from pytz.exceptions import UnknownTimeZoneError as UTZE
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 UnknownTimeZoneError = UTZE
 
 _shortcuts = None
 
 
-def populate_shortcuts():
+def _populate_shortcuts():
     global _shortcuts
     _shortcuts = {}
     try:
@@ -25,7 +24,7 @@ def populate_shortcuts():
             for row in csv_reader:
                 _shortcuts[row[0]] = row[1]
     except OSError:
-        logger.warning("Error while opening the data file, shortcuts inaccessible")
+        _logger.warning("Error while opening the data file, shortcuts inaccessible")
         pass
 
 
@@ -35,8 +34,8 @@ def timezone(zone):
     zone = zone.upper()
 
     if _shortcuts is None:
-        logger.info("Populating _shortcuts for the first time")
-        populate_shortcuts()
+        _logger.info("Populating _shortcuts for the first time")
+        _populate_shortcuts()
 
     if zone in _shortcuts:
         zone = _shortcuts[zone]

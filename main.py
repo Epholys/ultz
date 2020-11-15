@@ -9,7 +9,7 @@ from ulauncher.api.shared.action.RenderResultListAction import RenderResultListA
 from ulauncher.api.shared.event import KeywordQueryEvent
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 
-from pytz_wrapper import timezone, UnknownTimeZoneError
+import pytz_wrapper as pytz
 
 _logger = logging.getLogger(__name__)
 
@@ -68,6 +68,10 @@ def parse_datetime(datetime_str):
     if not (date or time):
         return None
 
+    # Note: it may be necessary to add a condition to check if *both* are true for n==1,
+    # as that would mean datetime_str would have be recognized as a time and date at the
+    # same time.
+
     if not date:
         date = dt.date.today()
 
@@ -114,51 +118,53 @@ def parse_expression(expr):
 
 
 class KeywordQueryEventListener(EventListener):
+    def return_error(self, msg):
+        item = ExtensionResultItem(name=msg)
+        return RenderResultListAction([item])
+
     def on_event(self, event, extension):
         expr = event.get_argument()
         if not expr:
             return DoNothingAction()
 
         code, where, when = parse_expression(expr)
-        _logger.debug(f"parse returned: where={where}, when=${when}, code=${code}")
+        _logger.debug(f"parse returned: where={where}, when={when}, code={code}")
 
         if code == ExprCode.ERR:
-            item = ExtensionResultItem(name="Incorrect expression")
-            return RenderResultListAction([item])
+            return self.return_error("Incorrect expression")
 
         date = dt.datetime.now()
         if code == ExprCode.TZ_DATEIN or code == ExprCode.TZ_DATEAT:
             if not when:
-                item = ExtensionResultItem(name="Incorrect date")
-                return RenderResultListAction([item])
+                return self.return_error("Incorrect date")
             date = when
 
         tz = None
         try:
-            _logger.debug("Trying tz")
-            tz = timezone(where)
-        except UnknownTimeZoneError:
-            item = ExtensionResultItem(name="Incorrect timezone")
-            return RenderResultListAction([item])
+            tz = pytz.timezone(where)
+        except pytz.UnknownTimeZoneError:
+            return self.return_error("Incorrect timezone")
 
         if code == ExprCode.TZ_DATEAT:
             # Reverse everything
-            date = dt.datetime.combine(date.date(), date.time(), tz)
+            # Does not work otherwise!
+            # As said in pytz/tzinfo.py:
+            # > This method should be used to construct localtimes, rather
+            # > than passing a tzinfo argument to a datetime constructor.
+            date = tz.localize(date)
             tz = None  # = here
 
         raw_result = date.astimezone(tz)
-        result = raw_result.strftime("%Y-%m-%d %H:%M")
+        displayed_result = raw_result.strftime("%Y-%m-%d %H:%M")
 
-        description = ""
-        if code == ExprCode.TZ_ONLY:
-            description = f"Time in {where} now"
-        elif code == ExprCode.TZ_DATEIN:
-            description = f'Time in {where}, at {date.strftime("%H:%M")} here'
-        else:  # code == ExprCode.TZ_DATEAT:
-            description = f'Time here, in {date.strftime("%H:%M")} at {where}'
+        description = {
+            ExprCode.TZ_ONLY: f"Time in {where} now",
+            ExprCode.TZ_DATEIN: f'Time in {where}, at {date.strftime("%H:%M")} here',
+            ExprCode.TZ_DATEAT: f'Time here, in {where} at {date.strftime("%H:%M")}',
+        }.get(code, "Unknown return code! Contact the dev")
 
         item = ExtensionResultItem(
-            icon="images/icon.png", name=result, description=description
+            icon="images/icon.png", name=displayed_result, description=description
         )
 
         return RenderResultListAction([item])
