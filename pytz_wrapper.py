@@ -31,6 +31,9 @@ def _populate_shortcuts():
 def timezone(zone):
     global _shortcuts
 
+    if not zone:
+        return None
+
     zone = zone.upper()
 
     if _shortcuts is None:

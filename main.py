@@ -117,6 +117,35 @@ def parse_expression(expr):
     return ExprCode.ERR, None, None
 
 
+def get_datetime(code, when):
+    date = dt.datetime.now()
+    if code == ExprCode.TZ_DATEIN or code == ExprCode.TZ_DATEAT:
+        if when:
+            date = when
+        else:
+            date = None
+    return date
+
+
+def get_tz(where):
+    tz = None
+    try:
+        tz = pytz.timezone(where)
+    except pytz.UnknownTimeZoneError:
+        pass
+    return tz
+
+
+def reverse_trip(datetime, tz):
+    # Does not work otherwise!
+    # As said in pytz/tzinfo.py:
+    # > This method should be used to construct localtimes, rather
+    # > than passing a tzinfo argument to a datetime constructor.
+    datetime = tz.localize(datetime)
+    tz = None  # = here
+    return datetime, tz
+
+
 class KeywordQueryEventListener(EventListener):
     def return_error(self, msg):
         item = ExtensionResultItem(name=msg)
@@ -133,34 +162,24 @@ class KeywordQueryEventListener(EventListener):
         if code == ExprCode.ERR:
             return self.return_error("Incorrect expression")
 
-        date = dt.datetime.now()
-        if code == ExprCode.TZ_DATEIN or code == ExprCode.TZ_DATEAT:
-            if not when:
-                return self.return_error("Incorrect date")
-            date = when
+        datetime = get_datetime(code, when)
+        if not datetime:
+            return self.return_error("Incorrect date")
 
-        tz = None
-        try:
-            tz = pytz.timezone(where)
-        except pytz.UnknownTimeZoneError:
+        tz = get_tz(where)
+        if not tz:
             return self.return_error("Incorrect timezone")
 
         if code == ExprCode.TZ_DATEAT:
-            # Reverse everything
-            # Does not work otherwise!
-            # As said in pytz/tzinfo.py:
-            # > This method should be used to construct localtimes, rather
-            # > than passing a tzinfo argument to a datetime constructor.
-            date = tz.localize(date)
-            tz = None  # = here
+            datetime, tz = reverse_trip(datetime, tz)
 
-        raw_result = date.astimezone(tz)
+        raw_result = datetime.astimezone(tz)
         displayed_result = raw_result.strftime("%Y-%m-%d %H:%M")
 
         description = {
             ExprCode.TZ_ONLY: f"Time in {where} now",
-            ExprCode.TZ_DATEIN: f'Time in {where}, at {date.strftime("%H:%M")} here',
-            ExprCode.TZ_DATEAT: f'Time here, in {where} at {date.strftime("%H:%M")}',
+            ExprCode.TZ_DATEIN: f'Time in {where}, at {datetime.strftime("%H:%M")} here',
+            ExprCode.TZ_DATEAT: f'Time here, in {where} at {datetime.strftime("%H:%M")}',
         }.get(code, "Unknown return code! Contact the dev")
 
         item = ExtensionResultItem(
