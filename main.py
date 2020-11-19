@@ -90,6 +90,9 @@ class ExprCode(Enum):
 
 
 def parse_expression(expr):
+    if expr is None or expr == "":
+        return ExprCode.ERR, None, None
+
     # Split & Strip
     split_in = list(map(str.strip, expr.split(" in ")))
     len_in = len(split_in)
@@ -146,6 +149,36 @@ def reverse_trip(datetime, tz):
     return datetime, tz
 
 
+def process_input(text_input):
+    code, where, when = parse_expression(text_input)
+    _logger.debug(f"parse returned: where={where}, when={when}, code={code}")
+
+    if code == ExprCode.ERR:
+        return "Incorrect expression", "", ""
+
+    datetime = get_datetime(code, when)
+    if not datetime:
+        return "Incorrect date", "", ""
+
+    tz = get_tz(where)
+    if not tz:
+        return "Incorrect timezone", "", ""
+
+    if code == ExprCode.TZ_DATEAT:
+        datetime, tz = reverse_trip(datetime, tz)
+
+    raw_result = datetime.astimezone(tz)
+    result = raw_result.strftime("%Y-%m-%d %H:%M")
+
+    description = {
+        ExprCode.TZ_ONLY: f"Time in {where} now",
+        ExprCode.TZ_DATEIN: f'Time in {where}, at {datetime.strftime("%H:%M")} here',
+        ExprCode.TZ_DATEAT: f'Time here, in {where} at {datetime.strftime("%H:%M")}',
+    }.get(code, "Unknown return code! Contact the dev")
+
+    return result, description, "images/icon.png"
+
+
 class KeywordQueryEventListener(EventListener):
     def return_error(self, msg):
         item = ExtensionResultItem(name=msg)
@@ -156,35 +189,9 @@ class KeywordQueryEventListener(EventListener):
         if not expr:
             return DoNothingAction()
 
-        code, where, when = parse_expression(expr)
-        _logger.debug(f"parse returned: where={where}, when={when}, code={code}")
+        result, description, icon = process_input(expr)
 
-        if code == ExprCode.ERR:
-            return self.return_error("Incorrect expression")
-
-        datetime = get_datetime(code, when)
-        if not datetime:
-            return self.return_error("Incorrect date")
-
-        tz = get_tz(where)
-        if not tz:
-            return self.return_error("Incorrect timezone")
-
-        if code == ExprCode.TZ_DATEAT:
-            datetime, tz = reverse_trip(datetime, tz)
-
-        raw_result = datetime.astimezone(tz)
-        displayed_result = raw_result.strftime("%Y-%m-%d %H:%M")
-
-        description = {
-            ExprCode.TZ_ONLY: f"Time in {where} now",
-            ExprCode.TZ_DATEIN: f'Time in {where}, at {datetime.strftime("%H:%M")} here',
-            ExprCode.TZ_DATEAT: f'Time here, in {where} at {datetime.strftime("%H:%M")}',
-        }.get(code, "Unknown return code! Contact the dev")
-
-        item = ExtensionResultItem(
-            icon="images/icon.png", name=displayed_result, description=description
-        )
+        item = ExtensionResultItem(icon=icon, name=result, description=description)
 
         return RenderResultListAction([item])
 

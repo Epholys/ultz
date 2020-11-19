@@ -1,3 +1,4 @@
+import time
 import pytz
 import datetime as dt
 import unittest
@@ -7,7 +8,7 @@ import main
 
 def _assert_dt_almost_eq(actual, expected, message=""):
     unittest.TestCase().assertAlmostEqual(
-        actual, expected, delta=dt.timedelta(microseconds=100), msg=message
+        actual, expected, delta=dt.timedelta(milliseconds=1), msg=message
     )
 
 
@@ -133,6 +134,102 @@ class TestReverseTrip(unittest.TestCase):
         datetime_there, tz_here = main.reverse_trip(datetime_here, tz_there)
         self.assertEqual(datetime_there, tz_there.localize(datetime_here))
         self.assertIsNone(tz_here)
+
+
+class TestProcessing(unittest.TestCase):
+    def setUp(self):
+        self.expr_err_msg = "Incorrect expression"
+        self.date_err_msg = "Incorrect date"
+        self.tz_err_msg = "Incorrect timezone"
+        self.ok_icon = "images/icon.png"
+
+    def format_datetime(self, datetime):
+        return datetime.strftime("%Y-%m-%d %H:%M")
+
+    def format_description_tzonly(self, _, where):
+        return f"Time in {where} now"
+
+    def format_description_datein(self, when, where):
+        return f'Time in {where}, at {when.strftime("%H:%M")} here'
+
+    def format_description_dateat(self, when, where):
+        return f'Time here, in {where} at {when.strftime("%H:%M")}'
+
+    def assert_is_error(self, _, description, icon):
+        self.assertEqual(description, "")
+        self.assertEqual(icon, "")
+
+    def test_none(self):
+        result, description, icon = main.process_input(None)
+        self.assert_is_error(result, description, icon)
+        self.assertEqual(result, self.expr_err_msg)
+
+    def test_empty(self):
+        result, description, icon = main.process_input("")
+        self.assert_is_error(result, description, icon)
+        self.assertEqual(result, self.expr_err_msg)
+
+    def test_dtin(self):
+        mm = 12
+        dd = 2
+        HH = 12
+        MM = 27
+        year = dt.date.today().year
+        when = dt.datetime(year, mm, dd, HH, MM)
+        where = "Pacific/Chatham"
+        expression = f"{mm:02}-{dd:02} {HH:02}:{MM:02} in {where}"
+
+        result, description, icon = main.process_input(expression)
+
+        expected_datetime = when.astimezone(pytz.timezone(where))
+
+        print(description)
+        print(result)
+
+        self.assertEqual(result, self.format_datetime(expected_datetime))
+        self.assertEqual(description, self.format_description_datein(when, where))
+        self.assertEqual(icon, self.ok_icon)
+
+    def test_dtat(self):
+        mm = 1
+        dd = 12
+        HH = 21
+        MM = 17
+        year = dt.date.today().year
+        when = dt.datetime(year, mm, dd, HH, MM)
+        where = "Pacific/Chatham"
+        expression = f"{where} at {mm:02}-{dd:02} {HH:02}:{MM:02}"
+
+        result, description, icon = main.process_input(expression)
+
+        tz = pytz.timezone(where)
+        expected_datetime = tz.localize(when).astimezone(None)
+
+        self.assertEqual(result, self.format_datetime(expected_datetime))
+        self.assertEqual(description, self.format_description_dateat(when, where))
+        self.assertEqual(icon, self.ok_icon)
+
+    def test_tz(self):
+        where = "Asia/Istanbul"
+        result, description, icon = main.process_input(where)
+        expected_datetime = dt.datetime.now().astimezone(pytz.timezone(where))
+        self.assertEqual(result, self.format_datetime(expected_datetime))
+        self.assertEqual(
+            description, self.format_description_tzonly(expected_datetime, where)
+        )
+        self.assertEqual(icon, self.ok_icon)
+
+    def test_wrong_dt(self):
+        expression = "25:89 in Europe/Paris"
+        result, description, icon = main.process_input(expression)
+        self.assertEqual(result, self.date_err_msg)
+        self.assert_is_error(result, description, icon)
+
+    def test_wrong_expr(self):
+        expression = "12:29 in America/New_York at 01:12"
+        result, description, icon = main.process_input(expression)
+        self.assertEqual(result, self.expr_err_msg)
+        self.assert_is_error(result, description, icon)
 
 
 if __name__ == "__main__":
