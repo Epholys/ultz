@@ -1,15 +1,8 @@
-import time
 import pytz
 import datetime as dt
 import unittest
-
 import main
-
-
-def _assert_dt_almost_eq(actual, expected, message=""):
-    unittest.TestCase().assertAlmostEqual(
-        actual, expected, delta=dt.timedelta(milliseconds=1), msg=message
-    )
+from freezegun import freeze_time
 
 
 class TestParseTime(unittest.TestCase):
@@ -19,7 +12,7 @@ class TestParseTime(unittest.TestCase):
 
         user_input = f"{HH:02}"
         parsed = main.parse_time(user_input)
-        _assert_dt_almost_eq(parsed, expected)
+        self.assertEqual(parsed, expected)
 
     def test_HHMM(self):
         HH = 4
@@ -28,7 +21,8 @@ class TestParseTime(unittest.TestCase):
 
         user_input = f"{HH:02}:{MM:02}"
         parsed = main.parse_time(user_input)
-        _assert_dt_almost_eq(parsed, expected)
+
+        self.assertEqual(parsed, expected)
 
     def test_incorrect(self):
         parsed = main.parse_time("89:9")
@@ -36,14 +30,17 @@ class TestParseTime(unittest.TestCase):
 
 
 class TestParseDate(unittest.TestCase):
+    @freeze_time("2002-01-23 15:42")
     def test_mmdd(self):
         mm = 10
         dd = 12
+
         expected = dt.date(dt.date.today().year, mm, dd)
 
         user_input = f"{mm:02}-{dd:02}"
         parsed = main.parse_date(user_input)
-        _assert_dt_almost_eq(parsed, expected)
+
+        self.assertEqual(parsed, expected)
 
     def test_incorrect(self):
         parsed = main.parse_time("9-19")
@@ -51,6 +48,7 @@ class TestParseDate(unittest.TestCase):
 
 
 class TestParseDateTime(unittest.TestCase):
+    @freeze_time("2005-04-23 12:23")
     def test_HHMM(self):
         HH = 14
         MM = 26
@@ -60,8 +58,10 @@ class TestParseDateTime(unittest.TestCase):
 
         user_input = f"{HH:02}:{MM:02}"
         parsed = main.parse_datetime(user_input)
-        _assert_dt_almost_eq(parsed, expected)
 
+        self.assertEqual(parsed, expected)
+
+    @freeze_time("2017-06-15 02:45")
     def test_mmdd(self):
         mm = 10
         dd = 12
@@ -71,8 +71,10 @@ class TestParseDateTime(unittest.TestCase):
 
         user_input = f"{mm:02}-{dd:02}"
         parsed = main.parse_datetime(user_input)
-        _assert_dt_almost_eq(parsed, expected)
 
+        self.assertEqual(parsed, expected)
+
+    @freeze_time("1995-02-03 10:43")
     def test_mmddHHmm(self):
         mm = 2
         dd = 28
@@ -82,7 +84,8 @@ class TestParseDateTime(unittest.TestCase):
 
         input_time = f"{mm:02}-{dd:02} {HH:02}:{MM:02}"
         parsed = main.parse_datetime(input_time)
-        _assert_dt_almost_eq(parsed, expected)
+
+        self.assertEqual(parsed, expected)
 
     def test_incorrect(self):
         parsed = main.parse_datetime("IO:54 ZD-LK")
@@ -90,17 +93,19 @@ class TestParseDateTime(unittest.TestCase):
 
 
 class TestGetDatetime(unittest.TestCase):
+    @freeze_time("1998-11-02 12:23")
     def test_nodatetime(self):
-        when = dt.datetime(1998, 11, 2, 12, 23)
+        when = dt.datetime(2012, 12, 28, 5, 14)  # Ignored
         datetime = main.get_datetime(main.ExprCode.TZ_ONLY, when)
-        _assert_dt_almost_eq(datetime, dt.datetime.now())
+        self.assertEqual(datetime, dt.datetime.now())
 
+    @freeze_time("1989-03-15 01:50")
     def test_date(self):
-        when = dt.datetime(1989, 3, 15, 1, 50)
+        when = dt.datetime.now()
         datetime_at = main.get_datetime(main.ExprCode.TZ_DATEAT, when)
         datetime_in = main.get_datetime(main.ExprCode.TZ_DATEIN, when)
-        _assert_dt_almost_eq(datetime_at, when)
-        _assert_dt_almost_eq(datetime_in, when)
+        self.assertEqual(datetime_at, when)
+        self.assertEqual(datetime_in, when)
 
     def test_err(self):
         when = None
@@ -128,9 +133,10 @@ class TestGetTimezone(unittest.TestCase):
 
 
 class TestReverseTrip(unittest.TestCase):
+    @freeze_time("2012-12-21 12:21")
     def test_reverse(self):
         tz_there = pytz.timezone("Africa/Dakar")
-        datetime_here = dt.datetime(2012, 12, 21, 12, 21)
+        datetime_here = dt.datetime.now()
         datetime_there, tz_here = main.reverse_trip(datetime_here, tz_there)
         self.assertEqual(datetime_there, tz_there.localize(datetime_here))
         self.assertIsNone(tz_here)
@@ -169,6 +175,7 @@ class TestProcessing(unittest.TestCase):
         self.assert_is_error(result, description, icon)
         self.assertEqual(result, self.expr_err_msg)
 
+    @freeze_time("2019")
     def test_dtin(self):
         mm = 12
         dd = 2
@@ -177,19 +184,16 @@ class TestProcessing(unittest.TestCase):
         year = dt.date.today().year
         when = dt.datetime(year, mm, dd, HH, MM)
         where = "Pacific/Chatham"
-        expression = f"{mm:02}-{dd:02} {HH:02}:{MM:02} in {where}"
-
-        result, description, icon = main.process_input(expression)
-
         expected_datetime = when.astimezone(pytz.timezone(where))
 
-        print(description)
-        print(result)
+        expression = f"{mm:02}-{dd:02} {HH:02}:{MM:02} in {where}"
+        result, description, icon = main.process_input(expression)
 
         self.assertEqual(result, self.format_datetime(expected_datetime))
         self.assertEqual(description, self.format_description_datein(when, where))
         self.assertEqual(icon, self.ok_icon)
 
+    @freeze_time("1975")
     def test_dtat(self):
         mm = 1
         dd = 12
@@ -197,18 +201,18 @@ class TestProcessing(unittest.TestCase):
         MM = 17
         year = dt.date.today().year
         when = dt.datetime(year, mm, dd, HH, MM)
-        where = "Pacific/Chatham"
-        expression = f"{where} at {mm:02}-{dd:02} {HH:02}:{MM:02}"
-
-        result, description, icon = main.process_input(expression)
-
+        where = "Europe/Madrid"
         tz = pytz.timezone(where)
         expected_datetime = tz.localize(when).astimezone(None)
+
+        expression = f"{where} at {mm:02}-{dd:02} {HH:02}:{MM:02}"
+        result, description, icon = main.process_input(expression)
 
         self.assertEqual(result, self.format_datetime(expected_datetime))
         self.assertEqual(description, self.format_description_dateat(when, where))
         self.assertEqual(icon, self.ok_icon)
 
+    @freeze_time("1975-01-12 21:17")
     def test_tz(self):
         where = "Asia/Istanbul"
         result, description, icon = main.process_input(where)
