@@ -149,6 +149,18 @@ def reverse_trip(datetime, tz):
     return datetime, tz
 
 
+def generate_description(code, where, datetime):
+    return {
+        ExprCode.TZ_ONLY: f"Time in {where} now",
+        ExprCode.TZ_DATEIN: f'Time in {where}, at {datetime.strftime("%H:%M")} here',
+        ExprCode.TZ_DATEAT: f'Time here, in {where} at {datetime.strftime("%H:%M")}',
+    }.get(code, "Unknown return code! Contact the dev")
+
+
+def format_datetime(datetime):
+    return datetime.strftime("%Y-%m-%d %H:%M")
+
+
 def process_input(text_input):
     code, where, when = parse_expression(text_input)
     _logger.debug(f"parse returned: where={where}, when={when}, code={code}")
@@ -168,13 +180,9 @@ def process_input(text_input):
         datetime, tz = reverse_trip(datetime, tz)
 
     raw_result = datetime.astimezone(tz)
-    result = raw_result.strftime("%Y-%m-%d %H:%M")
+    result = format_datetime(raw_result)
 
-    description = {
-        ExprCode.TZ_ONLY: f"Time in {where} now",
-        ExprCode.TZ_DATEIN: f'Time in {where}, at {datetime.strftime("%H:%M")} here',
-        ExprCode.TZ_DATEAT: f'Time here, in {where} at {datetime.strftime("%H:%M")}',
-    }.get(code, "Unknown return code! Contact the dev")
+    description = generate_description(code, where, datetime)
 
     return result, description, "images/icon.png"
 
