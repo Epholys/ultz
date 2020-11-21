@@ -1,5 +1,6 @@
 import datetime as dt
 from enum import Enum
+from typing import Optional, Tuple
 
 
 class ExprCode(Enum):
@@ -45,7 +46,7 @@ def parse_time(time_expr: str) -> Optional[dt.time]:
     return None
 
 
-def parse_datetime(datetime_expr) -> Optional[dt.datetime]:
+def parse_datetime(datetime_expr: str) -> Optional[dt.datetime]:
     # Note: suppose the day, month, or year will not change the next second
     datetime_split = list(map(str.strip, datetime_expr.split(" ")))
     n = len(datetime_split)

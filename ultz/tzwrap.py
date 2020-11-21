@@ -1,20 +1,24 @@
 import os
 import csv
 import logging
+from typing import Optional, Union, Dict
 
-from pytz import timezone as tz
+from datetime import tzinfo
+import pytz
 from pytz.exceptions import UnknownTimeZoneError as UTZE
 
 _logger = logging.getLogger(__name__)
 
 UnknownTimeZoneError = UTZE
 
-_shortcuts = None
+PyTzInfo = Union[pytz.tzinfo.StaticTzInfo, pytz.tzinfo.DstTzInfo]
+
+_shortcuts: Optional[Dict[str, str]] = None
 
 _shortcuts_filename = "tz-shortcuts.csv"
 
 
-def _populate_shortcuts():
+def _populate_shortcuts() -> None:
     global _shortcuts
     _shortcuts = {}
     try:
@@ -30,7 +34,7 @@ def _populate_shortcuts():
         pass
 
 
-def timezone(zone):
+def timezone(zone: Optional[str]) -> Optional[PyTzInfo]:
     global _shortcuts
 
     if not zone:
@@ -42,7 +46,7 @@ def timezone(zone):
         _logger.info("Populating _shortcuts for the first time")
         _populate_shortcuts()
 
-    if zone in _shortcuts:
-        zone = _shortcuts[zone]
+    if _shortcuts is not None:
+        zone = _shortcuts.get(zone, zone)
 
-    return tz(zone)
+    return pytz.timezone(zone)
