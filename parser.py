@@ -20,14 +20,14 @@ def parse_date(date_str):
             day = (int)(month_day[1])
             date = dt.date(year, month, day)
             return date
-        except ValueError:
+        except ValueError:  # pragma: nocover
             pass
 
     # Okay, then try the complete date
     try:
         date = dt.date.fromisoformat(date_str)
         return date
-    except ValueError:
+    except ValueError:  # pragma: nocover
         pass
 
     return None

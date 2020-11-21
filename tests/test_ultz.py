@@ -152,7 +152,3 @@ class TestProcessing(unittest.TestCase):
         result, description, icon = ultz.process_input(expression)
         self.assertEqual(result, ultz.get_error_msg(ultz.ErrCode.TZ))
         self.assert_is_error(result, description, icon)
-
-
-if __name__ == "__main__":
-    unittest.ultz()

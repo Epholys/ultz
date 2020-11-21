@@ -11,13 +11,15 @@ UnknownTimeZoneError = UTZE
 
 _shortcuts = None
 
+_shortcuts_filename = "tz-shortcuts.csv"
+
 
 def _populate_shortcuts():
     global _shortcuts
     _shortcuts = {}
     try:
         curr_dir = os.path.dirname(os.path.realpath(__file__))
-        file_name = "tz-shortcuts.csv"
+        file_name = _shortcuts_filename
         full_path = curr_dir + "/" + file_name
         with open(full_path) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=",")

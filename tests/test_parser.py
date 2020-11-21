@@ -41,8 +41,21 @@ class TestParseDate(unittest.TestCase):
 
         self.assertEqual(parsed, expected)
 
+    @freeze_time("1957-02-19 09:31")
+    def test_iso(self):
+        yyyy = 2004
+        mm = 8
+        dd = 15
+
+        expected = dt.date(yyyy, mm, dd)
+
+        user_input = f"{yyyy:04}-{mm:02}-{dd:02}"
+        parsed = parser.parse_date(user_input)
+
+        self.assertEqual(parsed, expected)
+
     def test_incorrect(self):
-        parsed = parser.parse_time("9-19")
+        parsed = parser.parse_date("15-19")
         self.assertIsNone(parsed)
 
 
@@ -86,10 +99,10 @@ class TestParseDateTime(unittest.TestCase):
 
         self.assertEqual(parsed, expected)
 
-    def test_incorrect(self):
+    def test_incorrect_data(self):
         parsed = parser.parse_datetime("IO:54 ZD-LK")
         self.assertIsNone(parsed)
 
-
-if __name__ == "__main__":
-    unittest.main()
+    def test_incorrect_syntax(self):
+        parsed = parser.parse_datetime("07-25 07:25 12:30")
+        self.assertIsNone(parsed)
