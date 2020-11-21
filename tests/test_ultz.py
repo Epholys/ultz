@@ -3,8 +3,9 @@ import unittest
 from freezegun import freeze_time
 
 import pytz
-import parser
-import ultz
+
+import ultz.parser as parser
+import ultz.ultz as ultz
 
 
 class TestGetDatetime(unittest.TestCase):

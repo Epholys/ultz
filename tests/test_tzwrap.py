@@ -2,7 +2,8 @@ import logging
 import unittest
 import unittest.mock as mock
 import pytz
-import tzwrap
+
+import ultz.tzwrap as tzwrap
 
 
 class TestTzWrap(unittest.TestCase):
@@ -23,7 +24,7 @@ class TestTzWrap(unittest.TestCase):
         self.assertIsNone(tzwrap.timezone(None))
 
     @mock.patch("builtins.open", new_callable=mock.mock_open)
-    @mock.patch("tzwrap._shortcuts", None)  # Reset to default state
+    @mock.patch("ultz.tzwrap._shortcuts", None)  # Reset to default state
     def test_missing_file(self, mopen):
         logging.disable(logging.WARNING)
         mopen.side_effect = OSError()

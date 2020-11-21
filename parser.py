@@ -9,10 +9,10 @@ class ExprCode(Enum):
     TZ_DATEAT = 3
 
 
-def parse_date(date_str):
+def parse_date(date_expr: str) -> Optional[dt.date]:
     # Try to find a date in "mm-dd" format first
     # (This is not supported by datetime, as it wants "yyyy-" first)
-    month_day = date_str.split("-")
+    month_day = date_expr.split("-")
     if len(month_day) == 2:
         try:
             year = dt.date.today().year
@@ -25,7 +25,7 @@ def parse_date(date_str):
 
     # Okay, then try the complete date
     try:
-        date = dt.date.fromisoformat(date_str)
+        date = dt.date.fromisoformat(date_expr)
         return date
     except ValueError:  # pragma: nocover
         pass
@@ -33,11 +33,11 @@ def parse_date(date_str):
     return None
 
 
-def parse_time(time_str):
+def parse_time(time_expr: str) -> Optional[dt.time]:
     # Try to parse a simple time in HH:MM:SS format:
     # (HH alone, and HH:MM alone are also supported)
     try:
-        time = dt.time.fromisoformat(time_str)
+        time = dt.time.fromisoformat(time_expr)
         return time
     except ValueError:
         pass
@@ -45,9 +45,9 @@ def parse_time(time_str):
     return None
 
 
-def parse_datetime(datetime_str):
+def parse_datetime(datetime_expr) -> Optional[dt.datetime]:
     # Note: suppose the day, month, or year will not change the next second
-    datetime_split = list(map(str.strip, datetime_str.split(" ")))
+    datetime_split = list(map(str.strip, datetime_expr.split(" ")))
     n = len(datetime_split)
     if n > 2:
         return None
@@ -77,7 +77,10 @@ def parse_datetime(datetime_str):
     return datetime
 
 
-def parse_expression(expr):
+_ParsingResult = Tuple[ExprCode, Optional[str], Optional[dt.datetime]]
+
+
+def parse_expression(expr: str) -> _ParsingResult:
     if expr is None or expr == "":
         return ExprCode.ERR, None, None
 

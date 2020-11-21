@@ -1,7 +1,8 @@
 import datetime as dt
 import unittest
-import parser
 from freezegun import freeze_time
+
+import ultz.parser as parser
 
 
 class TestParseTime(unittest.TestCase):
