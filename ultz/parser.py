@@ -81,7 +81,7 @@ def parse_datetime(datetime_expr: str) -> Optional[dt.datetime]:
 _ParsingResult = Tuple[ExprCode, Optional[str], Optional[dt.datetime]]
 
 
-def parse_expression(expr: str) -> _ParsingResult:
+def parse_expression(expr: Optional[str]) -> _ParsingResult:
     if expr is None or expr == "":
         return ExprCode.ERR, None, None
 

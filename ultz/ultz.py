@@ -69,7 +69,7 @@ def format_datetime(datetime: dt.datetime) -> str:
     return datetime.strftime("%Y-%m-%d %H:%M")
 
 
-def process_input(text_input: str) -> Tuple[str, str, str]:
+def process_input(text_input: Optional[str]) -> Tuple[str, str, str]:
     code, where, when = parse_expression(text_input)
     _logger.debug(f"parse returned: where={where}, when={when}, code={code}")
 
