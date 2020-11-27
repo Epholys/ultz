@@ -5,7 +5,8 @@ from ulauncher.api.shared.action.RenderResultListAction import RenderResultListA
 from ulauncher.api.shared.event import KeywordQueryEvent
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 
-import ultz
+
+from ultz.ultz import process_input
 
 
 class KeywordQueryEventListener(EventListener):
@@ -18,7 +19,7 @@ class KeywordQueryEventListener(EventListener):
         if not expr:
             return DoNothingAction()
 
-        result, description, icon = ultz.process_input(expr)
+        result, description, icon = process_input(expr)
 
         item = ExtensionResultItem(icon=icon, name=result, description=description)
 
