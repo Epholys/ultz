@@ -1,12 +1,11 @@
 """:mod:`ultz`'s wrapper around `pytz <https://pythonhosted.org/pytz/>`_"""
 
-import os
 import csv
 import logging
-from typing import Optional, Union, Dict, TYPE_CHECKING
+import os
+from typing import TYPE_CHECKING, Dict, Optional, Union
 
 import pytz
-
 
 _logger = logging.getLogger(__name__)
 

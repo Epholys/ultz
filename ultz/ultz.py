@@ -1,11 +1,10 @@
 """Take a timezone conversion, expression, parse it, interpret it, and returns a result
 for ulauncher."""
 
+import datetime as dt
 import logging
-
 from enum import Enum
 from typing import Optional, Tuple
-import datetime as dt
 
 import ultz.tzwrap as tzwrap
 from ultz.parser import ExprCode, parse_expression

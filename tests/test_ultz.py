@@ -1,9 +1,9 @@
 import datetime as dt
 import unittest
+
 from freezegun import freeze_time
 
 import pytz
-
 import ultz.parser as parser
 import ultz.ultz as ultz
 

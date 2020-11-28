@@ -1,5 +1,6 @@
 import datetime as dt
 import unittest
+
 from freezegun import freeze_time
 
 import ultz.parser as parser

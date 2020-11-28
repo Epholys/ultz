@@ -1,8 +1,8 @@
 import logging
 import unittest
 import unittest.mock as mock
-import pytz
 
+import pytz
 import ultz.tzwrap as tzwrap
 
 TMagicMock = mock.MagicMock
