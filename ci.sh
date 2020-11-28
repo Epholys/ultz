@@ -14,6 +14,7 @@ function main() {
     echocol green "LINTING WITH PYLINT AND BANDIT..."
     echocol green "================================="
     pylint ultz/
+    echocol green "---------------------------------"
     bandit -r ultz/ tests/
     echocol green "...DONE."
 
