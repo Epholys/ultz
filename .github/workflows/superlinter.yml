@@ -22,6 +22,6 @@ jobs:
         uses: github/super-linter@v3
         env:
           DEFAULT_BRANCH: master
-	  FILTER_REGEX_EXCLUDE: all
-	  FILTER_REGEX_INCLUDE: (ultz/|tests/)
+          FILTER_REGEX_EXCLUDE: all
+          FILTER_REGEX_INCLUDE: (ultz/|tests/)
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
