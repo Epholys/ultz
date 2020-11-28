@@ -4,5 +4,11 @@ __pycache__/
 # Emacs stuff
 *~
 
-# Python utilities (coverage/mypy)
+# Python
+## Reports (coverage/mypy)
 /html*/
+
+## docs
+_build/
+_static/
+_templates/

@@ -1,19 +1,30 @@
+""" Parser module of :mod:`ultz`
+
+    .. note::The datetime is parsed and completed at the datetime of execution, and so\
+    may be off-by-one by the end of the parsing if parsed close to a limit (year,\
+    month, day, hour, minute, etc).
+"""
+
 import datetime as dt
 from enum import Enum
 from typing import Optional, Tuple
 
 
-class ExprCode(Enum):
-    ERR = 0
-    TZ_ONLY = 1
-    TZ_DATEIN = 2
-    TZ_DATEAT = 3
+def parse_date(expr: str) -> Optional[dt.date]:
+    """Parse a string to a date.
 
+    Two format are supported:
 
-def parse_date(date_expr: str) -> Optional[dt.date]:
+    - ISO 8601 format ``yyyy-mm-dd`` (like 2019-05-13).
+    - A shorter ``mm-dd`` format (like 11-24) that sets the year to the current one.
+
+    :param expr: The date to parse.
+    :returns: The date if ``expr`` was correctly passed, ``None`` otherwise
+    """
+
     # Try to find a date in "mm-dd" format first
-    # (This is not supported by datetime, as it wants "yyyy-" first)
-    month_day = date_expr.split("-")
+    # (This is not supported by ISO 8601 as it requires "yyyy-" first)
+    month_day = expr.split("-")
     if len(month_day) == 2:
         try:
             year = dt.date.today().year
@@ -21,12 +32,12 @@ def parse_date(date_expr: str) -> Optional[dt.date]:
             day = (int)(month_day[1])
             date = dt.date(year, month, day)
             return date
-        except ValueError:  # pragma: nocover
+        except ValueError:  # pragma: nocover  # Test the next format
             pass
 
-    # Okay, then try the complete date
+    # Then try the complete date
     try:
-        date = dt.date.fromisoformat(date_expr)
+        date = dt.date.fromisoformat(expr)
         return date
     except ValueError:  # pragma: nocover
         pass
@@ -34,11 +45,18 @@ def parse_date(date_expr: str) -> Optional[dt.date]:
     return None
 
 
-def parse_time(time_expr: str) -> Optional[dt.time]:
-    # Try to parse a simple time in HH:MM:SS format:
-    # (HH alone, and HH:MM alone are also supported)
+def parse_time(expr: str) -> Optional[dt.time]:
+    """Parse a string to a time
+
+    The format supported is the same as :py:meth:`datetime.time.fromisoformat`, meaning
+    a string in the format: ``HH[:MM[:SS[.fff[fff]]]][+HH:MM[:SS[.ffffff]]]``
+
+    :param expr: The time to parse.
+    :returns: The time if ``expr`` was correctly parsed, ``None`` otherwise
+    """
+
     try:
-        time = dt.time.fromisoformat(time_expr)
+        time = dt.time.fromisoformat(expr)
         return time
     except ValueError:
         pass
@@ -47,27 +65,43 @@ def parse_time(time_expr: str) -> Optional[dt.time]:
 
 
 def parse_datetime(datetime_expr: str) -> Optional[dt.datetime]:
-    # Note: suppose the day, month, or year will not change the next second
+    """Parse a string into a full datetime
+
+    The format supported is the combination of :func:`parse_date` and func:`parse_time`,
+    in the format `date time`, date and time being optional if the other is present.
+
+    :param expr: The datetime to parse.
+    :returns: The datetime if ``expr`` was correctly parsed, ``None`` otherwise
+    """
+
+    # Try to split into the two components.
     datetime_split = list(map(str.strip, datetime_expr.split(" ")))
     n = len(datetime_split)
     if n > 2:
+        # Too much components, wrong expression.
         return None
 
     if n == 2:
+        # The two components are here, extract them.
         date_str, time_str = datetime_split[:2]
     else:
+        # Only one of them, we don't know which yet.
         date_str = time_str = datetime_split[0]
 
+    # Parse both of them
     date = parse_date(date_str)
     time = parse_time(time_str)
 
+    # None of them were correctly parsed
     if not (date or time):
         return None
 
     # Note: it may be necessary to add a condition to check if *both* are true for n==1,
     # as that would mean datetime_str would have be recognized as a time and date at the
-    # same time.
+    # same time. Not necessary now, but may be in the future where we could have an
+    # ambiguity between a day and a hour.
 
+    # If one of them is wrongly parsed, set it to current date/time
     if not date:
         date = dt.date.today()
 
@@ -78,10 +112,43 @@ def parse_datetime(datetime_expr: str) -> Optional[dt.datetime]:
     return datetime
 
 
+class ExprCode(Enum):
+    """Enumeration for the possible results of :func:`parse_expression`"""
+
+    ERR = 0
+    """Error: expression could not be parsed"""
+
+    TZ_ONLY = 1
+    """The expression only contained a timezone """
+
+    TZ_DATEIN = 2
+    """The expression contained a timezone and a datetime in the format ``datetime in
+    timezone``"""
+
+    TZ_DATEAT = 3
+    """The expression contained a timezone and a datetime in the format ``timezone at
+    datetime``"""
+
+
 _ParsingResult = Tuple[ExprCode, Optional[str], Optional[dt.datetime]]
 
 
 def parse_expression(expr: Optional[str]) -> _ParsingResult:
+    """Parse an expression querying a timezone and optionally date.
+
+    The expression is one of the follow formats:
+
+    * ``timezone``
+    * ``datetime in timezone``
+    * ``timezone at datetime``
+
+    :param expr: The expression to parse.
+    :returns: - A return code indicating if the expression was correctly parsed and if\
+    so the format
+              - A raw ``str`` timezone if applicable, ``None`` otherwise
+              - A full ``datetime`` if applicable, ``None`` otherwise
+    """
+
     if expr is None or expr == "":
         return ExprCode.ERR, None, None
 
