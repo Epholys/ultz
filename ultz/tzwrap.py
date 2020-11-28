@@ -10,13 +10,13 @@ import pytz
 
 _logger = logging.getLogger(__name__)
 
-_shorthands: Optional[Dict[str, str]] = None
+_SHORTHANDS: Optional[Dict[str, str]] = None
 """A dictionary linking a shorthand to the full timezone.
 
 For example, ``Paris`` could be a shorthand for ``Europe/Paris``.
 """
 
-_shortcuts_filename = "tz-shortcuts.csv"
+_SHORTCUTS_FILENAME = "tz-shortcuts.csv"
 
 
 def _populate_shorthands() -> None:
@@ -27,19 +27,19 @@ def _populate_shorthands() -> None:
 
     If the file could not be read, logs a warning a continue.
     """
-    global _shorthands
-    _shorthands = {}
+
+    global _SHORTHANDS
+    _SHORTHANDS = {}
     try:
         curr_dir = os.path.dirname(os.path.realpath(__file__))
-        file_name = _shortcuts_filename
+        file_name = _SHORTCUTS_FILENAME
         full_path = curr_dir + "/" + file_name
         with open(full_path) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=",")
             for row in csv_reader:
-                _shorthands[row[0]] = row[1]
+                _SHORTHANDS[row[0]] = row[1]
     except OSError:
         _logger.warning("Error while opening the data file, shortcuts inaccessible")
-        pass
 
 
 # Due to the limitation of ulauncher, pytz is imported as-is as a directory, so a lot of
@@ -73,7 +73,7 @@ def timezone(
               Python's :py:class:`tzinfo`. So they are not interchangeable.
     """
 
-    global _shorthands
+    global _SHORTHANDS
 
     if not zone:
         return None
@@ -82,11 +82,11 @@ def timezone(
     zone = zone.upper()
 
     # Populate _shorthands lazily and only once.
-    if _shorthands is None:
+    if _SHORTHANDS is None:
         _logger.info("Populating _shortcuts for the first time")
         _populate_shorthands()
 
-    if _shorthands is not None and zone in _shorthands:
-        zone = _shorthands[zone]
+    if _SHORTHANDS is not None and zone in _SHORTHANDS:
+        zone = _SHORTHANDS[zone]
 
     return pytz.timezone(zone)

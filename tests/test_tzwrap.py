@@ -26,7 +26,7 @@ class TestTzWrap(unittest.TestCase):
         self.assertIsNone(tzwrap.timezone(None))
 
     @mock.patch("builtins.open", new_callable=mock.mock_open)
-    @mock.patch("ultz.tzwrap._shortcuts", None)  # Reset to default state
+    @mock.patch("ultz.tzwrap._SHORTHANDS", None)  # Reset to default state
     def test_missing_file(self, mopen: TMagicMock) -> None:
         logging.disable(logging.WARNING)
         mopen.side_effect = OSError()

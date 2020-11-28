@@ -25,8 +25,8 @@ def get_datetime(code: ExprCode, when: Optional[dt.datetime]) -> Optional[dt.dat
               valid, :py:func:`datetime.now()` otherwise.
     """
 
-    date: Optional[dt.datetime] = dt.datetime.now()
-    if code == ExprCode.TZ_DATEIN or code == ExprCode.TZ_DATEAT:
+    date: Optional[dt.datetime] = dt.datetime.now()  # Test
+    if code in (ExprCode.TZ_DATEIN, ExprCode.TZ_DATEAT):
         if when:
             date = when
         else:
@@ -44,16 +44,16 @@ def get_tz(where: Optional[str]) -> Optional[tzwrap.PyTzInfo]:
               :py:class:`tzinfo` if ``where`` is a valid timezone, ``None`` otherwise.
     """
 
-    tz = None
+    timezone = None
     try:
-        tz = tzwrap.timezone(where)
+        timezone = tzwrap.timezone(where)
     except tzwrap.UnknownTimeZoneError:
         pass
-    return tz
+    return timezone
 
 
 def reverse_trip(
-    datetime: dt.datetime, tz: tzwrap.PyTzInfo
+    datetime: dt.datetime, timezone: tzwrap.PyTzInfo
 ) -> Tuple[dt.datetime, Optional[tzwrap.PyTzInfo]]:
     """Reverse the direction of the conversion.
 
@@ -62,7 +62,7 @@ def reverse_trip(
     converts the time at a certain location in the user's local timezone.
 
     :param datetime: The datetime to reverse.
-    :param datetime: The timezone to reverse.
+    :param timezone: The timezone to reverse.
     :returns: The datetime and timezone, reversed for the next computation.
     """
 
@@ -70,7 +70,7 @@ def reverse_trip(
     # As said in pytz/tzinfo.py:
     # > This method should be used to construct localtimes, rather
     # > than passing a tzinfo argument to a datetime constructor.
-    datetime = tz.localize(datetime)
+    datetime = timezone.localize(datetime)
     here = None
     return datetime, here
 
@@ -148,7 +148,7 @@ def process_input(text_input: Optional[str]) -> Tuple[str, str, str]:
     """
 
     code, where, when = parse_expression(text_input)
-    _logger.debug(f"parse returned: where={where}, when={when}, code={code}")
+    _logger.debug("parse returned: where=%s, when=%s, code=%s", where, when, code)
 
     if code == ExprCode.ERR:
         return get_error_msg(ErrCode.EXPR), "", ""
@@ -157,14 +157,14 @@ def process_input(text_input: Optional[str]) -> Tuple[str, str, str]:
     if not datetime:
         return get_error_msg(ErrCode.DATE), "", ""
 
-    tz = get_tz(where)
-    if not tz:
+    timezone = get_tz(where)
+    if not timezone:
         return get_error_msg(ErrCode.TZ), "", ""
 
     if code == ExprCode.TZ_DATEAT:
-        datetime, tz = reverse_trip(datetime, tz)
+        datetime, timezone = reverse_trip(datetime, timezone)
 
-    raw_result = datetime.astimezone(tz)
+    raw_result = datetime.astimezone(timezone)
     result = format_datetime(raw_result)
 
     description = generate_description(code, where, datetime)

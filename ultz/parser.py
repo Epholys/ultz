@@ -76,12 +76,12 @@ def parse_datetime(datetime_expr: str) -> Optional[dt.datetime]:
 
     # Try to split into the two components.
     datetime_split = list(map(str.strip, datetime_expr.split(" ")))
-    n = len(datetime_split)
-    if n > 2:
+    num = len(datetime_split)
+    if num > 2:
         # Too much components, wrong expression.
         return None
 
-    if n == 2:
+    if num == 2:
         # The two components are here, extract them.
         date_str, time_str = datetime_split[:2]
     else:

@@ -1,10 +1,10 @@
-# Python stuff
-__pycache__/
-
 # Emacs stuff
 *~
 
 # Python
+# Exe
+__pycache__/
+
 ## Reports (coverage/mypy)
 /html*/
 
