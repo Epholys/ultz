@@ -1,6 +1,6 @@
 # ultz
 
-Ultz is a [Ulauncher](https://shop.fairphone.com/fr/spare-parts)'s extension for quick and easy and fast timezone conversion.
+Ultz is a [Ulauncher](https://ulauncher.io/)'s extension for quick and easy and fast timezone conversion.
 
 ## Usage
 
