@@ -54,3 +54,8 @@ I wanted to learn more about Python, so I deliberately over-engineered the frame
 
 I also wanted to add some continuous integration with Github but dropped the case after seeing it would need even more configuration.
 
+## License
+
+- ultz: GPLv3
+- pytz: MIT
+- icon: Yaru icon theme (Attribution-ShareAlike 4.0 International (CC BY-SA 4.0))
