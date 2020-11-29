@@ -15,7 +15,7 @@ _SHORTHANDS: Optional[Dict[str, str]] = None
 For example, ``Paris`` could be a shorthand for ``Europe/Paris``.
 """
 
-_SHORTCUTS_FILENAME = "tz-shortcuts.csv"
+_SHORTCUTS_FILENAME = "tz-shorthands.csv"
 
 
 def _populate_shorthands() -> None:
