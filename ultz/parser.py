@@ -10,26 +10,36 @@ from enum import Enum
 from typing import Optional, Tuple
 
 
-def parse_date(expr: str) -> Optional[dt.date]:
+def parse_date(expr: str, form: str = "ISO") -> Optional[dt.date]:
     """Parse a string to a date.
 
-    Two format are supported:
+    Four format are supported:
 
-    - ISO 8601 format ``yyyy-mm-dd`` (like 2019-05-13).
-    - A shorter ``mm-dd`` format (like 11-24) that sets the year to the current one.
+    - If ``form`` is "ISO" (or everything other than "ALT"), the ISO 8601 format is used:
+        - Complete format: ``yyyy-mm-dd`` (like 2019-05-13).
+        - Shortened format: ``mm-dd`` format (like 11-24) that sets the year to the current one.
+    - Else, when ``form`` is "ALT", the following format is used:
+        - Complete format: ``dd-mm-yyyy`` (like 13-05-2019).
+        - Shortened format: ``dd-mm`` format (like 24-11) that sets the year to the current one.
 
     :param expr: The date to parse.
+    :param form: The format of the date to parse
     :returns: The date if ``expr`` was correctly passed, ``None`` otherwise
     """
 
-    # Try to find a date in "mm-dd" format first
-    # (This is not supported by ISO 8601 as it requires "yyyy-" first)
+    print("=============== {} ===========".format(form))
+    alternative = form == "ALT"
+
+    # Try to find a date in the short format first
     month_day = expr.split("-")
     if len(month_day) == 2:
         try:
             year = dt.date.today().year
             month = (int)(month_day[0])
             day = (int)(month_day[1])
+            if alternative:
+                # Reverse
+                month, day = day, month
             date = dt.date(year, month, day)
             return date
         except ValueError:  # pragma: nocover  # Test the next format
@@ -37,7 +47,18 @@ def parse_date(expr: str) -> Optional[dt.date]:
 
     # Then try the complete date
     try:
-        date = dt.date.fromisoformat(expr)
+        if not alternative:
+            date = dt.date.fromisoformat(expr)
+            return date
+
+        # else:
+        day_month_year = expr.split("-")
+        if len(day_month_year) != 3:
+            raise ValueError
+        day = (int)(month_day[0])
+        month = (int)(month_day[1])
+        year = (int)(month_day[2])
+        date = dt.date(year, month, day)
         return date
     except ValueError:  # pragma: nocover
         pass
@@ -64,13 +85,14 @@ def parse_time(expr: str) -> Optional[dt.time]:
     return None
 
 
-def parse_datetime(datetime_expr: str) -> Optional[dt.datetime]:
+def parse_datetime(datetime_expr: str, form: str = "ISO") -> Optional[dt.datetime]:
     """Parse a string into a full datetime
 
     The format supported is the combination of :func:`parse_date` and func:`parse_time`,
     in the format `date time`, date and time being optional if the other is present.
 
     :param expr: The datetime to parse.
+    :param form: The format for parsing the date part.
     :returns: The datetime if ``expr`` was correctly parsed, ``None`` otherwise
     """
 
@@ -89,7 +111,7 @@ def parse_datetime(datetime_expr: str) -> Optional[dt.datetime]:
         date_str = time_str = datetime_split[0]
 
     # Parse both of them
-    date = parse_date(date_str)
+    date = parse_date(date_str, form)
     time = parse_time(time_str)
 
     # None of them were correctly parsed
@@ -133,7 +155,7 @@ class ExprCode(Enum):
 _ParsingResult = Tuple[ExprCode, Optional[str], Optional[dt.datetime]]
 
 
-def parse_expression(expr: Optional[str]) -> _ParsingResult:
+def parse_expression(expr: Optional[str], form: str = "ISO") -> _ParsingResult:
     """Parse an expression querying a timezone and optionally date.
 
     The expression is one of the follow formats:
@@ -143,6 +165,7 @@ def parse_expression(expr: Optional[str]) -> _ParsingResult:
     * ``timezone at datetime``
 
     :param expr: The expression to parse.
+    :param form: The format for parsing the date.
     :returns: - A return code indicating if the expression was correctly parsed and if\
     so the format
               - A raw ``str`` timezone if applicable, ``None`` otherwise
@@ -167,13 +190,13 @@ def parse_expression(expr: Optional[str]) -> _ParsingResult:
     if len_in == 2 and len_at == 1:
         # [time] in [location]
         location = split_in[1]
-        date = parse_datetime(split_in[0])
+        date = parse_datetime(split_in[0], form)
         return ExprCode.TZ_DATEIN, location, date
 
     if len_in == 1 and len_at == 2:
         # [location] at [time]
         location = split_at[0]
-        date = parse_datetime(split_at[1])
+        date = parse_datetime(split_at[1], form)
         return ExprCode.TZ_DATEAT, location, date
 
     return ExprCode.ERR, None, None

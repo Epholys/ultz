@@ -127,7 +127,7 @@ def format_datetime(datetime: dt.datetime) -> str:
     return datetime.strftime("%Y-%m-%d %H:%M")
 
 
-def process_input(text_input: Optional[str]) -> Tuple[str, str, str]:
+def process_input(text_input: Optional[str], form: str = "ISO") -> Tuple[str, str, str]:
     """Process an expression for timezone conversion.
 
     The expression must be one of the following format:
@@ -137,6 +137,7 @@ def process_input(text_input: Optional[str]) -> Tuple[str, str, str]:
     - ``timezone at datetime``: Query the time here,  at ``datetime`` in ``timezone``
 
     :param text_input: The expression to parse and interpret.
+    :param form: The format for parsing the date.
     :returns: - If ``text_input`` is correct, the datetime result. Otherwise, a
                 descriptive error message.
               - If ``text_input`` is correct, a description of the result. Otherwise,
@@ -146,7 +147,7 @@ def process_input(text_input: Optional[str]) -> Tuple[str, str, str]:
 
     """
 
-    code, where, when = parse_expression(text_input)
+    code, where, when = parse_expression(text_input, form)
     _logger.debug("parse returned: where=%s, when=%s, code=%s", where, when, code)
 
     if code == ExprCode.ERR:

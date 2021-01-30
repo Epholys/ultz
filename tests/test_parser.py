@@ -56,8 +56,37 @@ class TestParseDate(unittest.TestCase):
 
         self.assertEqual(parsed, expected)
 
+    @freeze_time("2222-02-22 22:22")
+    def test_ddmm(self) -> None:
+        dd: int = 22
+        mm: int = 2
+
+        expected = dt.date(dt.date.today().year, mm, dd)
+
+        user_input: str = f"{dd:02}-{mm:02}"
+        parsed = parser.parse_date(user_input, "ALT")
+
+        self.assertEqual(parsed, expected)
+
+    @freeze_time("1991-11-19 19:19")
+    def test_alt(self) -> None:
+        dd: int = 19
+        mm: int = 11
+        yyyy: int = 1991
+
+        expected = dt.date(yyyy, mm, dd)
+
+        user_input: str = f"{dd:02}-{mm:02}-{yyyy:04}"
+        parsed = parser.parse_date(user_input, "ALT")
+
+        self.assertEqual(parsed, expected)
+
     def test_incorrect(self) -> None:
-        parsed = parser.parse_date("15-19")
+        parsed = parser.parse_date("15-02")
+        self.assertIsNone(parsed)
+
+    def test_incorrect_alt(self) -> None:
+        parsed = parser.parse_date("02-15", "ALT")
         self.assertIsNone(parsed)
 
 

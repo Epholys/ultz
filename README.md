@@ -20,6 +20,8 @@ The datetime must be one of the following format:
 - (**TIME**:) `HH[:MM[:SS]]`. For example: `12:03:54` for this day, at 12h03m54s.
 - `DATE TIME`. For example `09-03 13:23`
 
+There is also an option in the menu which change the **DATE** format to the alternative: `dd-mm-[yyyy]`.
+
 The timezone must either be one of the official timezone from the [tz database](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), or a shorthand. The shorthand are defined in the [tz-shorthands](./ultz/tz-shorthands.csv) file, and was generated so that the last part of the official timezone is enough. For example, `Paris` is a shorthand for `Europe/Paris`.
 
 A full example would be `tz Tokyo at 15:30`, which will returns the time here, at 15:30 in Tokyo.

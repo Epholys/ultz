@@ -19,7 +19,9 @@ class KeywordQueryEventListener(EventListener):
         if not expr:
             return DoNothingAction()
 
-        result, description, icon = process_input(expr)
+        result, description, icon = process_input(
+            expr, extension.preferences["date-format"]
+        )
 
         item = ExtensionResultItem(icon=icon, name=result, description=description)
 

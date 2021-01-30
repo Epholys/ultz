@@ -11,6 +11,23 @@
       "name": "Timezone",
       "description": "Keyword to launch the extension",
       "default_value": "tz"
+    },
+    {
+	"id": "date-format",
+	"type": "select",
+	"name": "Date format",
+	"description": "Format for the date",
+	"options": [
+	    {
+		"value": "ISO",
+	        "text": "ISO format: [YYYY-]MM-DD"
+	    },
+	    {
+		"value": "ALT",
+	        "text": "Alternative format: DD-MM[-YYYY]"
+	    }
+	],
+	"default_value": "ISO"
     }
   ]
 }
