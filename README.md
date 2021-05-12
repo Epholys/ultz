@@ -39,6 +39,7 @@ This file was created by:
   - Removing ambiguities (`Australia/West`, `Brazil/East`, `Brazil/West`)
   - Removing duplicates (the shorter one, if applicable, is conserved, otherwise alphabetically)
 - Adding `PST` and `PDT`
+- Due to [issue #3](https://github.com/Epholys/ultz/issues/3), `GMT+X` and `GMT-X` are swapped, as well as `Etc/GMT+X`
 
 ## Limitations
 
